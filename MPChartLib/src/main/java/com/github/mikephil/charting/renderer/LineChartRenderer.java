@@ -3,10 +3,11 @@ package com.github.mikephil.charting.renderer;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
@@ -22,7 +23,6 @@ import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.Transformer;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ViewPortHandler;
-
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
@@ -221,7 +221,9 @@ public class LineChartRenderer extends LineRadarRenderer {
             // let the spline start
             cubicPath.moveTo(cur.getX(), cur.getY() * phaseY);
 
-            for (int j = mXBounds.min + 1; j <= mXBounds.range + mXBounds.min; j++) {
+            float minY = 0f;
+            float maxY = 1000f;
+            for (int j = firstIndex; j <= lastIndex; j++) {
 
                 prevPrev = prev;
                 prev = cur;
@@ -234,11 +236,43 @@ public class LineChartRenderer extends LineRadarRenderer {
                 prevDy = (cur.getY() - prevPrev.getY()) * intensity;
                 curDx = (next.getX() - prev.getX()) * intensity;
                 curDy = (next.getY() - prev.getY()) * intensity;
+                minY = Math.min(minY, cur.getY());
+                maxY = Math.max(maxY, cur.getY());
 
                 cubicPath.cubicTo(prev.getX() + prevDx, (prev.getY() + prevDy) * phaseY,
                         cur.getX() - curDx,
                         (cur.getY() - curDy) * phaseY, cur.getX(), cur.getY() * phaseY);
             }
+            // Get screen coordinates for min Y value
+            MPPointD pixelForValues = trans.getPixelForValues(0, minY);
+            float minDy = (float) pixelForValues.y;
+            MPPointD.recycleInstance(pixelForValues);
+
+            // Get screen coordinates for max Y value
+            pixelForValues = trans.getPixelForValues(0, maxY);
+            float maxDy = (float) pixelForValues.y;
+            MPPointD.recycleInstance(pixelForValues);
+
+            // Get screen coordinates for 0 value
+            pixelForValues = trans.getPixelForValues(0, 800f);
+            float zeroDy = (float) pixelForValues.y;
+            MPPointD.recycleInstance(pixelForValues);
+
+            // Get screen coordinates for 1 value
+            pixelForValues = trans.getPixelForValues(0, 1000f);
+            float oneDy = (float) pixelForValues.y;
+            MPPointD.recycleInstance(pixelForValues);
+
+            float range = minDy - maxDy;
+            float zeroPointNormalized = Math.max((zeroDy - maxDy) / range, 0);
+            float onePointNormalized = Math.max((oneDy - maxDy) / range, 0);
+
+            LinearGradient linearGradient = new LinearGradient(
+                0, maxDy, 0, minDy,
+                new int[]{Color.RED, Color.RED, Color.YELLOW, Color.YELLOW, Color.GREEN, Color.GREEN},
+                new float[]{0, onePointNormalized, onePointNormalized, zeroPointNormalized, zeroPointNormalized, 1f},
+                Shader.TileMode.CLAMP);
+            mRenderPaint.setShader(linearGradient);
         }
 
         // if filled is enabled, close the path
