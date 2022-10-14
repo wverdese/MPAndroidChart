@@ -1,16 +1,15 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
 
 group='com.github.philjay'
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 32
+    buildToolsVersion '31.0.0'
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 28
+        targetSdkVersion 32
         versionCode 3
-        versionName '3.1.0'
+        versionName '3.1.0-airthings'
     }
     buildTypes {
         release {
